@@ -60,7 +60,7 @@ debug = False
 # -----------------------------------------------------------------------------
 # IPython notebook related functions
 #
-#from IPython.display import display_latex
+# from IPython.display import display_latex
 from IPython.display import Latex, HTML
 
 
@@ -384,7 +384,7 @@ def replace_dirac_delta(e, _n=0):
 
 def replace_kronecker_delta(e, L, _n=0):
     """
-    Look for Integral of the form 
+    Look for Integral of the form
         L
         ∫ sin(n*pi*x/L) * sin(m*pi*x/L) dx
         0
@@ -394,7 +394,7 @@ def replace_kronecker_delta(e, L, _n=0):
         0
     and replace with L/2 * KroneckerDelta(n, m)
     if both n and m are positive integers.
-    
+
     In addition, look for Integral of the form
         L
         ∫ sin(n*pi*x/L) * cos(m*pi*x/L) dx
@@ -406,33 +406,38 @@ def replace_kronecker_delta(e, L, _n=0):
         warnings.warn("Too high level or recursion, aborting")
         return e
     if isinstance(e, Add):
-        return Add(*[replace_kronecker_delta(arg, L=L, _n=_n+1) for arg in e.args])
+        return Add(*[replace_kronecker_delta(arg, L=L, _n=_n+1)
+                     for arg in e.args])
     if isinstance(e, Mul):
-        return Mul(*[replace_kronecker_delta(arg, L=L, _n=_n+1) for arg in e.args])
+        return Mul(*[replace_kronecker_delta(arg, L=L, _n=_n+1)
+                     for arg in e.args])
     if isinstance(e, Sum):
         nargs = [replace_kronecker_delta(e.function, L=L, _n=_n+1)]
         for lim in e.limits:
             nargs.append(lim)
         return Sum(*nargs)
-        
+
     if isinstance(e, Integral):
         func = e.function
         lims = e.limits
-        if len(lims)==1 and (isinstance(func, Mul) and len(func.args)==2
-            and len(lims[0])==3): # works only for definite integrals
+        if len(lims) == 1 and (isinstance(func, Mul) and len(func.args) == 2
+                               and len(lims[0]) == 3):
+            # works only for definite integrals
             funcs = func.args
             dvar, xa, xb = lims[0]
             if (xa, xb) == (0, L):
                 if ((all([isinstance(f, sin) for f in funcs])
                     or all([isinstance(f, cos) for f in funcs]))
                     and all([dvar in f.args[0].args for f in funcs])):
+
                     n = [(f.args[0]*L/(dvar*pi)) for f in funcs]
                     if all([m.is_integer and m.is_positive for m in n]):
                         return L * KroneckerDelta(n[0], n[1]) / 2
-                
+
                 if (((isinstance(funcs[0], sin) and isinstance(funcs[1], cos))
                     or (isinstance(funcs[0], cos) and isinstance(funcs[1], sin)))
                     and all([dvar in f.args[0].args for f in funcs])):
+
                     n = [(f.args[0]*L/(dvar*pi)) for f in funcs]
                     if all([m.is_integer and m.is_positive for m in n]):
                         return 0
@@ -442,6 +447,7 @@ def replace_kronecker_delta(e, L, _n=0):
                 nargs.append(lim)
             return Integral(*nargs)
     return e
+
 
 # -----------------------------------------------------------------------------
 # Simplification of quantum expressions
@@ -482,7 +488,6 @@ def qsimplify(e_orig, _n=0):
         warnings.warn("Too high level or recursion, aborting")
         return e_orig
 
-    
     e = normal_ordered_form(e_orig)
 
     if isinstance(e, Add):
@@ -497,8 +502,8 @@ def qsimplify(e_orig, _n=0):
     elif isinstance(e, Mul):
         args1 = tuple(arg for arg in e.args if arg.is_commutative)
         args2 = tuple(arg for arg in e.args if not arg.is_commutative)
-        #x = 1
-        #for y in args2:
+        # x = 1
+        # for y in args2:
         #    x = x * y
 
         x = 1
